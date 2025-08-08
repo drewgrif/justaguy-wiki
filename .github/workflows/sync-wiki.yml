@@ -1,0 +1,110 @@
+name: Sync Wiki Content
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          
+      - name: Clone source wiki
+        run: |
+          git clone https://github.com/drewgrif/docs.justaguylinux.com.wiki.git source-wiki
+          
+      - name: Process wiki content
+        run: |
+          # Remove old content but keep config files
+          find . -name "*.md" -not -path "./source-wiki/*" -not -name "README.md" -delete
+          
+          # Copy markdown files from wiki
+          cp source-wiki/*.md ./
+          
+          # Rename Home.md to index.md
+          if [ -f "Home.md" ]; then
+            mv Home.md index.md
+          fi
+          
+          # Convert wiki links to Jekyll-compatible links
+          for file in *.md; do
+            echo "Processing $file..."
+            
+            # Convert [[Page]] links to [Page](page.html)
+            sed -i 's/\[\[\([^]|]*\)\]\]/[\1](\L\1.html)/g' "$file"
+            
+            # Convert [[Display|Page]] links to [Display](page.html)
+            sed -i 's/\[\[\([^|]*\)|\([^]]*\)\]\]/[\1](\L\2.html)/g' "$file"
+            
+            # Convert [Text](PageName) links to [Text](pagename.html)
+            sed -i 's/\[\([^]]*\)\](\([A-Z][A-Za-z-]*\))/[\1](\L\2.html)/g' "$file"
+            
+            # Fix double extensions
+            sed -i 's/\.html\.html/.html/g' "$file"
+            
+            # Don't convert external links
+            sed -i 's/\](http\([^)]*\)\.html)/](http\1)/g' "$file"
+            sed -i 's/\](mailto\([^)]*\)\.html)/](mailto\1)/g' "$file"
+            
+            # Add Jekyll front matter if missing
+            if ! grep -q "^---" "$file"; then
+              title=$(basename "$file" .md | sed 's/-/ /g' | sed 's/\b\w/\u&/g')
+              if [ "$file" = "index.md" ]; then
+                title="Home"
+              fi
+              
+              temp_file=$(mktemp)
+              echo "---" > "$temp_file"
+              echo "title: $title" >> "$temp_file"
+              echo "layout: default" >> "$temp_file"
+              echo "---" >> "$temp_file"
+              echo "" >> "$temp_file"
+              cat "$file" >> "$temp_file"
+              mv "$temp_file" "$file"
+            fi
+          done
+          
+          # Process _Sidebar.md for navigation
+          if [ -f "_Sidebar.md" ]; then
+            # Convert to simple navigation
+            {
+              echo '<nav class="sidebar-nav">'
+              sed 's/\[\[\([^]|]*\)\]\]/<a href="\/\L\1.html">\1<\/a>/g' "_Sidebar.md" | \
+              sed 's/\[\[\([^|]*\)|\([^]]*\)\]\]/<a href="\/\L\2.html">\1<\/a>/g' | \
+              sed 's/\* \(.*\)/<li>\1<\/li>/g' | \
+              sed 's/### \(.*\)/<h3>\1<\/h3>/g' | \
+              sed 's/^## \(.*\)/<h2>\1<\/h2>/g'
+              echo '</nav>'
+            } > _includes/nav.html
+            rm "_Sidebar.md"
+          fi
+          
+          # Process _Footer.md
+          if [ -f "_Footer.md" ]; then
+            mv "_Footer.md" _includes/footer.md
+          fi
+          
+          # Clean up
+          rm -rf source-wiki
+          
+      - name: Commit changes
+        run: |
+          git add -A
+          if ! git diff --staged --quiet; then
+            git commit -m "Sync wiki content - $(date '+%Y-%m-%d %H:%M:%S')"
+            git push
+            echo "Changes committed and pushed"
+          else
+            echo "No changes to commit"
+          fi
