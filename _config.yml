@@ -1,0 +1,49 @@
+# Jekyll configuration for justaguy.wiki
+title: JustAGuy Wiki
+description: "Not an expert. Just A Guy." - Linux documentation and guides
+url: https://justaguy.wiki
+baseurl: ""
+
+# Theme
+remote_theme: pages-themes/slate@v0.2.0
+
+# Plugins
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jemoji
+
+# Markdown settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+
+# Site settings
+timezone: America/New_York
+lang: en
+
+# Google Analytics (optional - add your ID)
+# google_analytics: G-XXXXXXXXXX
+
+# Social
+author: JustAGuyLinux
+twitter:
+  username: justaguylinux
+social:
+  name: JustAGuy Linux
+  links:
+    - https://twitter.com/justaguylinux
+    - https://github.com/drewgrif
+    - https://youtube.com/justaguylinux
+
+# Exclude files from processing
+exclude:
+  - README.md
+  - LICENSE
+  - .gitignore
+  - Gemfile
+  - Gemfile.lock
