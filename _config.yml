@@ -4,8 +4,7 @@ description: '"Not an expert. Just A Guy." - Linux documentation and guides'
 url: https://justaguy.wiki
 baseurl: ""
 
-# Theme
-remote_theme: pages-themes/slate@v0.2.0
+# No heavy theme - clean GitHub wiki style
 
 # Plugins
 plugins:
