@@ -1,6 +1,6 @@
 # Jekyll configuration for justaguy.wiki
 title: JustAGuy Wiki
-description: "Not an expert. Just A Guy." - Linux documentation and guides
+description: '"Not an expert. Just A Guy." - Linux documentation and guides'
 url: https://justaguy.wiki
 baseurl: ""
 
